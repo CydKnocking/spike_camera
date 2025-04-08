@@ -8,10 +8,11 @@ class Calibrator(object):
     相机标定，同时可对realsense和spike相机进行标定
     """
 
-    def __init__(self, img_paths, w_c=11, h_c=8):
+    def __init__(self, img_paths, w_c=11, h_c=8, crop_factor=None):
         self.w_corners = w_c
         self.h_corners = h_c
         self.img_paths = img_paths
+        self.crop_factor = crop_factor
         self._load_imgs()
 
     def _load_imgs(self):
@@ -19,6 +20,10 @@ class Calibrator(object):
         for _p in self.img_paths:
             # 读取图片以灰度图的方式
             img = cv2.imread(_p, cv2.IMREAD_GRAYSCALE)
+            if self.crop_factor is not None:
+                # 裁剪图片
+                h, w = img.shape
+                img = img[int(h * self.crop_factor):int(h * (1 - self.crop_factor)), int(w * self.crop_factor):int(w * (1 - self.crop_factor))]
             self.images.append(img)
         self.size = self.images[0].shape[::-1]
     
@@ -82,7 +87,7 @@ def calib_realsense_cam(img_path, w_c=11, h_c=8):
     # print(images)
 
     # 创建Calibrator对象
-    calibrator = Calibrator(images, w_c, h_c)
+    calibrator = Calibrator(images, w_c, h_c, crop_factor=0.25)
     ret, mtx, dist, rvecs, tvecs = calibrator.calibrate()
 
     print("ret:", ret)
@@ -147,7 +152,7 @@ def debug_test_spike_cam(img_path, w_c=11, h_c=8):
     print("tvecs:\n", tvecs)  # 平移向量--外参
 
 if __name__ == '__main__':
-    # calib_spike_cam(img_path="/media/knocking/Seagate_Basic/calib_spike_realsense/1/spike")
-    # calib_realsense_cam(img_path="/media/knocking/Seagate_Basic/calib_spike_realsense/1/realsense")
-    debug_test_spike_cam(img_path="/media/knocking/Seagate_Basic/calib_spike/debug_test_different_alpha_beta")
+    calib_spike_cam(img_path="/media/knocking/Seagate_Basic/calib_spike_realsense/4/spike")
+    calib_realsense_cam(img_path="/media/knocking/Seagate_Basic/calib_spike_realsense/4/realsense")
+    # debug_test_spike_cam(img_path="/media/knocking/Seagate_Basic/calib_spike/debug_test_different_alpha_beta")
 

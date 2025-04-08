@@ -24,8 +24,8 @@ def test_different_alpha_beta_chessboard(plane_file, save_path):
     frames = (frames * 255).astype(np.uint8)
     frame_example = frames[25]
     success = []
-    for beta in range(0, 101):
-        for alpha in range(1, 50):
+    for beta in range(0, 101, 20):
+        for alpha in range(1, 50, 2):
             _f = cv2.convertScaleAbs(frame_example, alpha=alpha, beta=beta)
             # _f = cv2.fastNlMeansDenoising(_f, None, 10, 7, 21)
             # cv2.putText(_f, f"alpha: {alpha}, beta: {beta}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
@@ -35,10 +35,10 @@ def test_different_alpha_beta_chessboard(plane_file, save_path):
             ret, corners = cv2.findChessboardCorners(_f, (11, 8), None)
             if ret:
                 print(f"alpha: {alpha}, beta: {beta} success")
-                # cv2.drawChessboardCorners(_f, (11, 8), corners, ret)
-                # cv2.putText(_f, f"alpha: {alpha}, beta: {beta}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-                # cv2.imshow("frame_example", _f)
-                # cv2.waitKey(1)
+                cv2.drawChessboardCorners(_f, (11, 8), corners, ret)
+                cv2.putText(_f, f"alpha: {alpha}, beta: {beta}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                cv2.imshow("frame_example", _f)
+                cv2.waitKey(0)
                 success.append([alpha, beta])
             else:
                 print(f"alpha: {alpha}, beta: {beta} failed", end="\r")
@@ -68,6 +68,8 @@ def reconstruct(plane_file, save_path):
     # print(frames[0, :5, :])
     frames = (frames * 255).astype(np.uint8)
     for idx, frame in enumerate(tqdm(frames, desc="saving TFI", leave=False)):
+        # flip the frame horizontally
+        frame = cv2.flip(frame, 1)
         # use cv2 to show the frame in float32 and gray scale
         _f = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta)
         # put a text on the frame
@@ -104,14 +106,14 @@ def reconstruct(plane_file, save_path):
     # # cv2.destroyAllWindows()
 
 def test_different_alpha_beta():
-    planes_path = "/media/knocking/Seagate_Basic/calib_spike/planes/20250331170735672.npy"
-    save_path = "/media/knocking/Seagate_Basic/calib_spike/debug_test_different_alpha_beta"
+    planes_path = "/media/knocking/Seagate_Basic/20250404221957494/planes/20250404221957494.npy"
+    save_path = "/media/knocking/Seagate_Basic/20250404221957494/debug_test_different_alpha_beta"
     save_path = Path(save_path)
     save_path.mkdir(exist_ok=True)
     test_different_alpha_beta_chessboard(planes_path, save_path)
 
 def convert_planes_to_png():
-    planes_path = "/media/knocking/Seagate_Basic/calib_spike"
+    planes_path = "/media/knocking/Seagate_Basic/calib_spike_0405_1"
     planes = sorted(glob(os.path.join(planes_path, "planes/*.npy")))
     save_path = Path(planes_path) / "reconstruct_TFI"
     save_path.mkdir(exist_ok=True)
@@ -123,5 +125,5 @@ def convert_planes_to_png():
         reconstruct(plane, save_p)
 
 if __name__ == '__main__':
-    # convert_planes_to_png()
-    test_different_alpha_beta()
+    convert_planes_to_png()
+    # test_different_alpha_beta()

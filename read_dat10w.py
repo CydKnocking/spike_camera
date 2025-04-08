@@ -28,9 +28,11 @@ def convert(input_file):
 
 
 def convert_all(input_dir: Path, output_file: Path):
+    # print(f"Converting {input_dir} to {output_file}")
     input_files = list(
         sorted(input_dir.glob("*.dat"), key=lambda x: int(x.stem.split("_")[-1]))
     )
+    # print(input_files[:5])
 
     # Convert the files
     # Multi-threading
@@ -46,7 +48,7 @@ def convert_all(input_dir: Path, output_file: Path):
 
 
 if __name__ == "__main__":
-    proj_data_dir = Path("/media/knocking/Seagate_Basic/calib_spike")
+    proj_data_dir = Path("/media/knocking/Seagate_Basic/calib_spike_0405_1")
     data_dir = proj_data_dir / "raw_data"
     frame_dir = data_dir.parent / "planes"
     # data_patch = "real_data/20241016"
