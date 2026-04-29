@@ -58,7 +58,7 @@ class Calibrator(object):
                 print(f"Can't find chessboard corners in {i_p}")
                 continue
 
-            print(f"Processing {i_p}")
+            # print(f"Processing {i_p}")
             
             obj_points.append(objp)
             
@@ -73,7 +73,7 @@ class Calibrator(object):
             new_size = (800, 600)
             resized_img = cv2.resize(img, new_size)
             cv2.imshow('img', resized_img)
-            cv2.waitKey(0)
+            cv2.waitKey(100)  # 等待100ms，显示每张图片
         
         cv2.destroyAllWindows()
 
@@ -104,11 +104,13 @@ def calib_realsense_cam(img_path, w_c=11, h_c=8):
     calibrator = Calibrator(images, w_c, h_c)
     ret, mtx, dist, rvecs, tvecs, obj_points, img_points = calibrator.calibrate()
 
+    print("Realsense Camera Calibration Results:")
     print("ret:", ret)
     print("mtx:\n", mtx)  # 内参数矩阵--内参
     print("dist:\n", dist)  # 畸变系数--内参
-    print("rvecs:\n", rvecs)  # 旋转向量--外参
-    print("tvecs:\n", tvecs)  # 平移向量--外参
+    # print("rvecs:\n", rvecs)  # 旋转向量--外参
+    # print("tvecs:\n", tvecs)  # 平移向量--外参
+    print()
     
     return mtx, dist, rvecs, tvecs, obj_points, img_points
 
@@ -134,11 +136,13 @@ def calib_spike_cam(img_path, w_c=11, h_c=8):
     calibrator = Calibrator(images, w_c, h_c)
     ret, mtx, dist, rvecs, tvecs, obj_points, img_points = calibrator.calibrate()
 
+    print("Spike Camera Calibration Results:")
     print("ret:", ret)
     print("mtx:\n", mtx)  # 内参数矩阵--内参
     print("dist:\n", dist)  # 畸变系数--内参
-    print("rvecs:\n", rvecs)  # 旋转向量--外参
-    print("tvecs:\n", tvecs)  # 平移向量--外参
+    # print("rvecs:\n", rvecs)  # 旋转向量--外参
+    # print("tvecs:\n", tvecs)  # 平移向量--外参
+    print()
     
     return mtx, dist, rvecs, tvecs, obj_points, img_points
 

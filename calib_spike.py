@@ -1,3 +1,5 @@
+raise DeprecationWarning("This file is deprecated, please use calib_stereo.py instead.")
+
 import cv2
 import numpy as np
 import glob

@@ -45,19 +45,42 @@ class CLASS_RECON:
     def reconstruct(self, planes, if_new_planes=False):
         all_frames = []
         new_planes = [] if self.__class__.__name__ == "TFI_DN" else None
-        for idx in tqdm(range(0, planes.shape[0], 2000), desc="Reconstruct", leave=False):
+        i_step = 2000
+        # ## 假设换算关系是：每10个plane重建1个frame
+        # ## 所以window的overlap是200，并且重建结果需要在前后共去掉20个frame
+        # for idx in tqdm(range(0, planes.shape[0], i_step - 200), desc="Reconstruct", leave=False):
+        #     all_frames.append(self._reconstruct(planes[idx : min(idx + i_step, planes.shape[0])])[10:-10])
+        for idx in tqdm(range(0, planes.shape[0], i_step - 200), desc="Reconstruct", leave=False):
             if self.__class__.__name__ == "TFI_DN":
-                x, y = self._reconstruct(planes[idx : idx + 2000])
-                all_frames.append(x)
-                new_planes.append(y)
+                x, y = self._reconstruct(planes[idx : min(idx + i_step, planes.shape[0])])
+                all_frames.append(x[10:-10])
+                new_planes.append(y[10:-10])
             else:
-                all_frames.append(self._reconstruct(planes[idx : idx + 2000]))
+                all_frames.append(self._reconstruct(planes[idx : min(idx + i_step, planes.shape[0])])[10:-10])
         if if_new_planes:
             return np.concatenate(all_frames, axis=0), np.concatenate(
                 new_planes, axis=0
             )
         else:
             return np.concatenate(all_frames, axis=0)
+    
+    def reconstruct_stream(self, planes):
+        assert self.__class__.__name__ != "TFI_DN", "TFI_DN does not support stream reconstruction"
+        all_frames = []
+        i_step = 2000
+        # ## 假设换算关系是：每10个plane重建1个frame
+        # ## 所以window的overlap是200，并且重建结果需要在前后共去掉20个frame
+        # for idx in tqdm(range(0, planes.shape[0], i_step - 200), desc="Reconstruct", leave=False):
+        #     all_frames.append(self._reconstruct(planes[idx : min(idx + i_step, planes.shape[0])])[10:-10])
+
+        now_yield_idx = 0
+        for idx in range(0, planes.shape[0], i_step - 200):
+            now_frames = self._reconstruct(planes[idx : min(idx + i_step, planes.shape[0])])[10:-10]
+
+            for stream_idx in range(now_frames.shape[0]):
+                # 返回当前的frame
+                yield now_frames[stream_idx]
+                now_yield_idx += 1
 
 
 class TFI(CLASS_RECON):

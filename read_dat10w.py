@@ -36,21 +36,24 @@ def convert_all(input_dir: Path, output_file: Path):
 
     # Convert the files
     # Multi-threading
-    res = thread_map(convert, input_files, total=len(input_files), disable=True)
+    for start_idx in range(0, len(input_files), 1000):
+        end_idx = min(start_idx + 1000, len(input_files))
+        res = thread_map(convert, input_files[start_idx:end_idx], total=end_idx-start_idx, disable=False, max_workers=16)
 
-    # # Single-threading
-    # res = [convert(file) for file in tqdm(input_files)]
+        # # Single-threading
+        # res = [convert(file) for file in tqdm(input_files)]
 
-    frames = np.stack(res, axis=0)
-    frames = np.concatenate(frames, axis=0)
-    frames = np.packbits(frames, axis=2, bitorder="little")
-    np.save(output_file, frames)
+        frames = np.stack(res, axis=0)
+        frames = np.concatenate(frames, axis=0)
+        frames = np.packbits(frames, axis=2, bitorder="little")
+        np.save(f"{output_file}_{start_idx}_{end_idx}.npy", frames)
 
 
 if __name__ == "__main__":
-    proj_data_dir = Path("/media/knocking/Seagate_Basic/calib_spike_0405_1")
+    # proj_data_dir = Path("/media/knocking/Seagate_Basic/calib_spike_250804_seqs")
+    proj_data_dir = Path("./temdata_250804/")
     data_dir = proj_data_dir / "raw_data"
-    frame_dir = data_dir.parent / "planes"
+    frame_dir = data_dir.parent / "planes_splits"
     # data_patch = "real_data/20241016"
     data_patch = ""
     indata_dir = data_dir / data_patch
@@ -58,6 +61,7 @@ if __name__ == "__main__":
     outdata_dir.mkdir(parents=True, exist_ok=True)
 
     scenes = list(indata_dir.iterdir())
+    # scenes = scenes[-3:]
     for scene in tqdm(scenes, total=len(scenes)):
-        output_file = outdata_dir / (scene.stem + ".npy")
+        output_file = outdata_dir / (scene.stem)
         convert_all(scene, output_file)
