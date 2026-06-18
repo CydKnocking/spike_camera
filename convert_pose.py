@@ -25,6 +25,32 @@ def rigid_transform_3D(A, B):
     return R_mat, t
 
 
+def filter_invalid_poses(poses: np.ndarray, timestamps: np.ndarray, velocity_threshold: float = 5.0) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Filter out invalid poses by checking the velocity between the poses.
+    valid poses: velocity is less than 5 m/s
+
+    args:
+        poses: (N, 7), (tx, ty, tz, qx, qy, qz, qw)
+        timestamps: (N,), timestamps of each pose frame
+    return:
+        - valid_poses: (N, 7), valid poses
+        - valid_timestamps: (N,), valid timestamps
+    """
+    valid_poses = []
+    valid_timestamps = []
+    for i in range(len(poses)):
+        if i == 0:
+            valid_poses.append(poses[i])
+            valid_timestamps.append(timestamps[i])
+        else:
+            velocity = np.linalg.norm(poses[i] - poses[i-1]) / (timestamps[i] - timestamps[i-1])
+            if velocity < velocity_threshold:
+                valid_poses.append(poses[i])
+                valid_timestamps.append(timestamps[i])
+    return np.array(valid_poses), np.array(valid_timestamps)
+
+
 def convert_pose(Pw_all_frames, timestamps, save_path):
     """
     Convert the world coordinates to camera coordinates.
@@ -42,11 +68,15 @@ def convert_pose(Pw_all_frames, timestamps, save_path):
     # --- Step 2: Process each frame ---
     poses = []
     for Pw, timestamp in zip(Pw_all_frames, timestamps):  # Pw shape = (4, 3)
-        R_mat, t = rigid_transform_3D(Pc, Pw)
+        # R_mat, t = rigid_transform_3D(Pc, Pw)   # camera to world coordinates
+        R_mat, t = rigid_transform_3D(Pw, Pc)   # world to camera coordinates (the same to Athena project)
         quat = R.from_matrix(R_mat).as_quat()  # (qx, qy, qz, qw)
         poses.append(np.concatenate([t, quat]))
 
-    # --- Step 3: Print the poses ---
+    # --- Step 3: Filter invalid poses ---
+    poses, timestamps = filter_invalid_poses(poses, timestamps)
+
+    # --- Step 4: Save the poses ---
     with open(save_path, "w") as f:
         f.write("# timestamp tx ty tz qx qy qz qw\n")
         for timestamp, pose in zip(timestamps, poses):
@@ -83,8 +113,8 @@ def load_points_from_trc(trc_file):
 
 if __name__ == "__main__":
 
-    file_name = "20250804-3"
-    trc_file = f"E:\\20250804_data\\20250804 pose raw data\\{file_name}.trc"
+    file_name = "20250804-7"
+    trc_file = f"F:\\20250804_data\\20250804 pose raw data\\{file_name}.trc"
     save_path = f"{file_name}_tumformat.txt"
 
     Pw_all_frames, timestamps = load_points_from_trc(trc_file)
