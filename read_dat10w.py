@@ -10,7 +10,7 @@ from PIL import Image
 from tqdm.contrib.concurrent import thread_map, process_map
 from tqdm import tqdm
 import itertools
-import scipy.io as sio
+# import scipy.io as sio
 
 
 def convert(input_file):
@@ -24,6 +24,7 @@ def convert(input_file):
     frames = frames.reshape(400, 250, 400)
     # rotate 180
     frames = np.rot90(frames, 2, (1, 2))
+    # print(f"Converted {input_file.name}: {frames.shape}, {frames.dtype}, max: {frames.max()}, min: {frames.min()}")
     return frames
 
 
@@ -36,24 +37,26 @@ def convert_all(input_dir: Path, output_file: Path):
 
     # Convert the files
     # Multi-threading
-    for start_idx in range(0, len(input_files), 1000):
-        end_idx = min(start_idx + 1000, len(input_files))
-        res = thread_map(convert, input_files[start_idx:end_idx], total=end_idx-start_idx, disable=False, max_workers=16)
+    # res = thread_map(convert, input_files, total=len(input_files), disable=True)
+    # print(f"Converted {len(input_files)} files.")
+    res = [convert(file) for file in tqdm(input_files, desc="Converting files")]
+    # res = []
+    # for file in tqdm(input_files, desc="Converting files"):
+    #     res.append(convert(file))
 
-        # # Single-threading
-        # res = [convert(file) for file in tqdm(input_files)]
+    # # Single-threading
+    # res = [convert(file) for file in tqdm(input_files)]
 
-        frames = np.stack(res, axis=0)
-        frames = np.concatenate(frames, axis=0)
-        frames = np.packbits(frames, axis=2, bitorder="little")
-        np.save(f"{output_file}_{start_idx}_{end_idx}.npy", frames)
+    frames = np.stack(res, axis=0)
+    frames = np.concatenate(frames, axis=0)
+    frames = np.packbits(frames, axis=2, bitorder="little")
+    np.save(output_file, frames)
 
 
 if __name__ == "__main__":
-    # proj_data_dir = Path("/media/knocking/Seagate_Basic/calib_spike_250804_seqs")
-    proj_data_dir = Path("./temdata_250804/")
+    proj_data_dir = Path("D:\\cyd\\Documents\\SLAM\\spike_camera\\SpikeSee\\temdata")
     data_dir = proj_data_dir / "raw_data"
-    frame_dir = data_dir.parent / "planes_splits"
+    frame_dir = data_dir.parent / "planes"
     # data_patch = "real_data/20241016"
     data_patch = ""
     indata_dir = data_dir / data_patch
@@ -61,7 +64,6 @@ if __name__ == "__main__":
     outdata_dir.mkdir(parents=True, exist_ok=True)
 
     scenes = list(indata_dir.iterdir())
-    # scenes = scenes[-3:]
     for scene in tqdm(scenes, total=len(scenes)):
-        output_file = outdata_dir / (scene.stem)
+        output_file = outdata_dir / (scene.stem + ".npy")
         convert_all(scene, output_file)
