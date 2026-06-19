@@ -5,6 +5,7 @@ from pathlib import Path
 from tqdm import tqdm
 import cv2
 import matplotlib.pyplot as plt
+import h5py
 
 
 class CLASS_RECON:
@@ -64,7 +65,7 @@ class CLASS_RECON:
         else:
             return np.concatenate(all_frames, axis=0)
     
-    def reconstruct_stream(self, planes):
+    def reconstruct_stream(self, planes, save_path: Path = None):
         assert self.__class__.__name__ != "TFI_DN", "TFI_DN does not support stream reconstruction"
         all_frames = []
         i_step = 2000
@@ -74,13 +75,22 @@ class CLASS_RECON:
         #     all_frames.append(self._reconstruct(planes[idx : min(idx + i_step, planes.shape[0])])[10:-10])
 
         now_yield_idx = 0
+        # all_frames = []
         for idx in range(0, planes.shape[0], i_step - 200):
             now_frames = self._reconstruct(planes[idx : min(idx + i_step, planes.shape[0])])[10:-10]
+            # all_frames.append(now_frames)
+
+            # save as h5 files
+            if save_path is not None:
+                with h5py.File(save_path / f"stream_{now_yield_idx:09d}.h5", "w") as f:
+                    f.create_dataset("frames", data=now_frames)
 
             for stream_idx in range(now_frames.shape[0]):
                 # 返回当前的frame
-                yield now_frames[stream_idx]
+                yield now_yield_idx, now_frames[stream_idx]
                 now_yield_idx += 1
+        
+        # return np.concatenate(all_frames, axis=0)
 
 
 class TFI(CLASS_RECON):

@@ -43,83 +43,66 @@ def reconstruct(data: np.ndarray, save_path: Path, save_h5_name: str = None):
     # print(f"reconstructing {plane_file}")
     # data = np.load(plane_file)
     print(f"data loaded, shape: {data.shape}")
-    data = np.unpackbits(data, axis=2, bitorder="little").astype(np.uint8)
-    print(f"data unpacked, shape: {data.shape}")
-    # data = data[:1000]
-    # print(data.shape, data.dtype, data.max(), data.min()) # (60000, 250, 400) uint8 1 0
-    # print(data[0, :5, :])
+    # data = np.unpackbits(data, axis=2, bitorder="little").astype(np.uint8)
+    # print(f"data unpacked, shape: {data.shape}")
 
     # Set beta to increase the brightness of the image
     alpha = 10.0
     beta = 20
 
-    # TFI
+    # Streaming TFI
     tfi = TFI(device="cuda")
-    frames = tfi.reconstruct(data)
-    print(f"frames reconstructed, shape: {frames.shape}")
-    # print(frames.shape, frames.dtype, frames.max(), frames.min()) # (6000, 250, 400) float32 1.0 0.0015600624
-    # print(frames[0, :5, :])
-    frames = (frames * 255).astype(np.uint8)
-
-    ### Save frames to h5 file
-    if save_h5_name is not None:
-        print(f"saving frames to h5 file: {save_path / save_h5_name}")
-        with h5py.File(save_path / save_h5_name, "w") as f:
-            f.create_dataset("frames", data=frames[:, :, ::-1])  # Remember to flip the frame horizontally
-
-    ### Save frames to png
-    min_file_idx = 9999999999999
-    max_file_idx = -9999999999
-    # Get start_idx: get the max file index from save_path
-    # if no files in save_path, start_idx is 0
-    if len(list(save_path.glob("*.png"))) == 0:
-        start_idx = 0
-    else:
-        start_idx = max(int(f.stem) for f in save_path.glob("*.png")) + 1
-    print(f"start_idx: {start_idx}")
-    for idx, frame in enumerate(tqdm(frames, desc="saving TFI", leave=False)):
-        # flip the frame horizontally
-        frame = cv2.flip(frame, 1)
-        # use cv2 to show the frame in float32 and gray scale
-        frame = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta)
-        # put a text on the frame
-        # cv2.putText(_f, f"{idx}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        # cv2.imshow("frame_TFI", _f)
-        # cv2.imshow("frame_TFI", frame)
-        cv2.imwrite(str(save_path / f"{idx + start_idx}.png"), frame)
-        min_file_idx = min(min_file_idx, idx + start_idx)
-        max_file_idx = max(max_file_idx, idx + start_idx)
+    for idx, frame in tfi.reconstruct_stream(data, save_path=save_path):
+        # print(f"frame {idx}, shape: {frame.shape}")
+        # cv2.imshow(f"frame", frame)
         # cv2.waitKey(1)
-    # cv2.destroyAllWindows()
+        frame = (frame * 255).astype(np.uint8)
+        frame = cv2.flip(frame, 1)
+        frame = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta)
+        cv2.imwrite(str(save_path / f"{idx}.png"), frame)
 
-    # print(f"min_file_idx: {min_file_idx}, max_file_idx: {max_file_idx}")
-
-    # # test different setting of alpha and beta
-    # frame_example = frames[3440]
-    # for beta in range(0, 101, 20):
-    #     for alpha in range(1, 21, 2):
-    #         _f = cv2.convertScaleAbs(frame_example, alpha=alpha, beta=beta)
-    #         cv2.putText(_f, f"alpha: {alpha}, beta: {beta}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-    #         cv2.imshow("frame_example", _f)
-    #         cv2.waitKey(1000)
-    # cv2.destroyAllWindows()
-    # assert 1==0
-
-    # # TFP
-    # tfp = TFP()
-    # frames = tfp.reconstruct(data)
-    # # print(frames.shape, frames.dtype, frames.max(), frames.min()) # (6000, 250, 400) float32 1.0 0.0
+    # # TFI
+    # tfi = TFI(device="cuda")
+    # frames = tfi.reconstruct_stream(data)
+    # print(f"frames reconstructed, shape: {frames.shape}")
+    # # print(frames.shape, frames.dtype, frames.max(), frames.min()) # (6000, 250, 400) float32 1.0 0.0015600624
     # # print(frames[0, :5, :])
     # frames = (frames * 255).astype(np.uint8)
-    # for idx, frame in enumerate(frames):
-    #     _f = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta)
-    #     cv2.imwrite(str(save_path / f"{idx}.png"), _f)
-    # #     cv2.imshow("frame_TFP", cv2.convertScaleAbs(frame, alpha=alpha, beta=beta))
-    # #     # cv2.imshow("frame_TFP", frame)
-    # #     cv2.waitKey(1)
+
+    # ### Save frames to h5 file
+    # if save_h5_name is not None:
+    #     print(f"saving frames to h5 file: {save_path / save_h5_name}")
+    #     with h5py.File(save_path / save_h5_name, "w") as f:
+    #         f.create_dataset("frames", data=frames[:, :, ::-1])  # Remember to flip the frame horizontally
+
+    # ### Save frames to png
+    # min_file_idx = 9999999999999
+    # max_file_idx = -9999999999
+    # # Get start_idx: get the max file index from save_path
+    # # if no files in save_path, start_idx is 0
+    # if len(list(save_path.glob("*.png"))) == 0:
+    #     start_idx = 0
+    # else:
+    #     start_idx = max(int(f.stem) for f in save_path.glob("*.png")) + 1
+    # print(f"start_idx: {start_idx}")
+    # for idx, frame in enumerate(tqdm(frames, desc="saving TFI", leave=False)):
+    #     # flip the frame horizontally
+    #     frame = cv2.flip(frame, 1)
+    #     # use cv2 to show the frame in float32 and gray scale
+    #     frame = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta)
+    #     # put a text on the frame
+    #     # cv2.putText(_f, f"{idx}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+    #     # cv2.imshow("frame_TFI", _f)
+    #     # cv2.imshow("frame_TFI", frame)
+    #     cv2.imwrite(str(save_path / f"{idx + start_idx}.png"), frame)
+    #     min_file_idx = min(min_file_idx, idx + start_idx)
+    #     max_file_idx = max(max_file_idx, idx + start_idx)
+    #     # cv2.waitKey(1)
     # # cv2.destroyAllWindows()
 
-def convert_all(input_dir: Path, output_file: Path):
+    # # print(f"min_file_idx: {min_file_idx}, max_file_idx: {max_file_idx}")
+
+def convert_all(input_dir: Path, output_dir: Path):
     # print(f"Converting {input_dir} to {output_file}")
     input_files = list(
         sorted(input_dir.glob("*.dat"), key=lambda x: int(x.stem.split("_")[-1]))
@@ -140,25 +123,27 @@ def convert_all(input_dir: Path, output_file: Path):
 
     frames = np.stack(res, axis=0)
     frames = np.concatenate(frames, axis=0)
-    frames = np.packbits(frames, axis=2, bitorder="little")
+    # frames = np.packbits(frames, axis=2, bitorder="little")
     # np.save(output_file, frames)
 
-    save_path = Path("./reconstruct_TFI")
-    save_path.mkdir(parents=True, exist_ok=True)
-    reconstruct(frames, save_path, save_h5_name=f"{save_path}/{output_file.name}.h5")
+    # save_path = Path("./reconstruct_TFI")
+    # save_path.mkdir(parents=True, exist_ok=True)
+    reconstruct(frames, output_dir, save_h5_name=f"{output_dir.name}.h5")
 
 
 if __name__ == "__main__":
-    proj_data_dir = Path("D:\\cyd\\Documents\\SLAM\\spike_camera\\SpikeSee\\temdata")
+    proj_data_dir = Path("F:\\20250804_data\\calib_spike_250804_seqs")
     data_dir = proj_data_dir / "raw_data"
     frame_dir = data_dir.parent / "planes"
     # data_patch = "real_data/20241016"
     data_patch = ""
     indata_dir = data_dir / data_patch
-    outdata_dir = frame_dir / data_patch
-    outdata_dir.mkdir(parents=True, exist_ok=True)
+    # outdata_dir = frame_dir / data_patch
+    # outdata_dir.mkdir(parents=True, exist_ok=True)
 
     scenes = list(indata_dir.iterdir())
     for scene in tqdm(scenes, total=len(scenes)):
-        output_file = Path(f"{scene.stem}.npy")
-        convert_all(scene, output_file)
+        # output_file = Path(f"{scene.stem}.npy")
+        output_dir = Path(f"./reconstruct_TFI/{scene.stem}")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        convert_all(scene, output_dir)
