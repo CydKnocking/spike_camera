@@ -61,47 +61,6 @@ def reconstruct(data: np.ndarray, save_path: Path, save_h5_name: str = None):
         frame = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta)
         cv2.imwrite(str(save_path / f"{idx}.png"), frame)
 
-    # # TFI
-    # tfi = TFI(device="cuda")
-    # frames = tfi.reconstruct_stream(data)
-    # print(f"frames reconstructed, shape: {frames.shape}")
-    # # print(frames.shape, frames.dtype, frames.max(), frames.min()) # (6000, 250, 400) float32 1.0 0.0015600624
-    # # print(frames[0, :5, :])
-    # frames = (frames * 255).astype(np.uint8)
-
-    # ### Save frames to h5 file
-    # if save_h5_name is not None:
-    #     print(f"saving frames to h5 file: {save_path / save_h5_name}")
-    #     with h5py.File(save_path / save_h5_name, "w") as f:
-    #         f.create_dataset("frames", data=frames[:, :, ::-1])  # Remember to flip the frame horizontally
-
-    # ### Save frames to png
-    # min_file_idx = 9999999999999
-    # max_file_idx = -9999999999
-    # # Get start_idx: get the max file index from save_path
-    # # if no files in save_path, start_idx is 0
-    # if len(list(save_path.glob("*.png"))) == 0:
-    #     start_idx = 0
-    # else:
-    #     start_idx = max(int(f.stem) for f in save_path.glob("*.png")) + 1
-    # print(f"start_idx: {start_idx}")
-    # for idx, frame in enumerate(tqdm(frames, desc="saving TFI", leave=False)):
-    #     # flip the frame horizontally
-    #     frame = cv2.flip(frame, 1)
-    #     # use cv2 to show the frame in float32 and gray scale
-    #     frame = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta)
-    #     # put a text on the frame
-    #     # cv2.putText(_f, f"{idx}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-    #     # cv2.imshow("frame_TFI", _f)
-    #     # cv2.imshow("frame_TFI", frame)
-    #     cv2.imwrite(str(save_path / f"{idx + start_idx}.png"), frame)
-    #     min_file_idx = min(min_file_idx, idx + start_idx)
-    #     max_file_idx = max(max_file_idx, idx + start_idx)
-    #     # cv2.waitKey(1)
-    # # cv2.destroyAllWindows()
-
-    # # print(f"min_file_idx: {min_file_idx}, max_file_idx: {max_file_idx}")
-
 def convert_all(input_dir: Path, output_dir: Path):
     # print(f"Converting {input_dir} to {output_file}")
     input_files = list(
